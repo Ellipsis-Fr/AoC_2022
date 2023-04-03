@@ -28,4 +28,8 @@ impl TextFileReader {
     pub fn get_content(&self) -> &str {
         &self.content.as_ref().unwrap()
     }
+
+    pub fn get_content_as_list_split_by_newline(&self) -> Vec<String> {
+        self.content.as_ref().unwrap().to_owned().lines().map(str::to_string).collect()
+    }
 }

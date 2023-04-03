@@ -5,19 +5,14 @@ fn main() {
     println!("Puzzle du 04/12 Partie 1");
     
     let puzzle = get_puzzle();
-    let vec_puzzle = convert_in_vec(puzzle);
-    let count_pairs_with_same_assignments = get_count_pairs_with_same_assignments(vec_puzzle);
+    let count_pairs_with_same_assignments = get_count_pairs_with_same_assignments(puzzle);
     println!("Total d'assignement se superposant : {count_pairs_with_same_assignments}");
 }
 
-fn get_puzzle() -> String {
+fn get_puzzle() -> Vec<String> {
     let mut text_file_reader = TextFileReader::new("04_12.txt");
     text_file_reader.read_file_text().expect("Lecture de l'entrée réussie");
-    text_file_reader.get_content().to_owned()
-}
-
-fn convert_in_vec(puzzle: String) -> Vec<String> {
-    puzzle.lines().map(str::to_string).collect()
+    text_file_reader.get_content_as_list_split_by_newline()
 }
 
 fn get_count_pairs_with_same_assignments(vec_puzzle: Vec<String>) -> u32 {

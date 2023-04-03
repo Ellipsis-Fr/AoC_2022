@@ -1,8 +1,8 @@
-use AoC_2022::text_file_reader::{self, TextFileReader};
+use AoC_2022::text_file_reader::TextFileReader;
 
 
 fn main() {
-    println!("Puzzle du 04/12");
+    println!("Puzzle du 04/12 Partie 1");
     
     let puzzle = get_puzzle();
     let vec_puzzle = convert_in_vec(puzzle);
@@ -11,7 +11,7 @@ fn main() {
 }
 
 fn get_puzzle() -> String {
-    let mut text_file_reader = TextFileReader::new("04_12_p1.txt");
+    let mut text_file_reader = TextFileReader::new("04_12.txt");
     text_file_reader.read_file_text().expect("Lecture de l'entrée réussie");
     text_file_reader.get_content().to_owned()
 }

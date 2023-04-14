@@ -24,4 +24,12 @@ path = "src/05_12/part_1.rs"
 name = "05_12_p2"
 path = "src/05_12/part_2.rs"
 
+[[bin]]
+name = "06_12_p1"
+path = "src/06_12/part_1.rs"
+
+[[bin]]
+name = "06_12_p2"
+path = "src/06_12/part_2.rs"
+
 [dependencies]

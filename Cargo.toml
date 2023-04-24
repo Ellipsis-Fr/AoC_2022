@@ -32,4 +32,8 @@ path = "src/06_12/part_1.rs"
 name = "06_12_p2"
 path = "src/06_12/part_2.rs"
 
+[[bin]]
+name = "07_12"
+path = "src/07_12/all.rs"
+
 [dependencies]

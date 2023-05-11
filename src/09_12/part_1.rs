@@ -26,10 +26,6 @@ impl Point {
     }
 }
 
-enum Direction {
-    L(Point), R(Point), U(Point), D(Point)
-}
-
 fn main() {
     println!("Puzzle du 09/12 Partie 1");
     
@@ -48,27 +44,14 @@ fn get_all_points_visited_by_tail(puzzle: Vec<String>) -> HashSet<Point> {
     let mut head = Point {x: 0, y: 0};
     let mut tail = head.clone();
 
-    println!("HEAD : {:?}", head);
-    println!("TAIL : {:?}", tail);
-
     let mut points = HashSet::new();
     points.insert(tail.clone());
 
     for movement in puzzle {
-        println!("=======================================");
-        println!("=======================================");
-        println!("movement : {movement}");
-
-        
         let (direction, repetition) = define_movement(movement);
-
-        println!("direction : {:?}", direction);
-        println!("repetition : {repetition}");
 
         for _ in 0..repetition {
             head.add(&direction);
-
-            println!("HEAD : {:?}", head);
 
             if !tail.isAdjacentTo(&head) {
                 let diff = tail.diff(&head);
@@ -86,7 +69,6 @@ fn get_all_points_visited_by_tail(puzzle: Vec<String>) -> HashSet<Point> {
 
                     tail.add(&Point { x: dx, y: dy });
                 }
-                println!("TAIL : {:?}", tail);
                 points.insert(tail.clone());
             }
         }

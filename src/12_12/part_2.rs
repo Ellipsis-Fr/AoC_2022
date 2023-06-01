@@ -20,7 +20,7 @@ impl PossibleWay {
 }
 
 fn main() {
-    println!("Puzzle du 12/12 Partie 1");
+    println!("Puzzle du 12/12 Partie 2");
     
     let puzzle = get_puzzle();
     let map = init_map(puzzle);

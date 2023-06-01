@@ -57,7 +57,7 @@ impl Tree {
 
     pub fn count_step(&self) {
         // let node = self.root_node.lock().unwrap();
-        Node::count(Arc::clone(&self.root_node), 0); 
+        Node::count(Arc::clone(&self.root_node), 0, Arc::clone(self.end_node.as_ref().unwrap())); 
     }
 
     pub fn print_step(&self) {
@@ -86,7 +86,15 @@ impl Node {
         self.children.push(child_node);
     }
 
-    pub fn count(node: Arc<Mutex<Node>>, mut step: u32) {
+    pub fn count(node: Arc<Mutex<Node>>, mut step: u32, end_node: Arc<Mutex<Node>>) {
+        let lock_end_node = end_node.lock().unwrap();
+        if lock_end_node.position != 0 && lock_end_node.position < step {
+            println!("{step}");
+            println!("fini");
+            return;
+        } 
+        drop(lock_end_node);
+
         step += 1;
         let lock_node = node.lock().unwrap();
         // let children_nodes = lock_node.children;
@@ -110,9 +118,10 @@ impl Node {
         let mut handlers = vec![];
         for node in nodes_to_continue {
             let actual_node = Arc::clone(&node);
+            let end_node = Arc::clone(&end_node);
             drop(node);
             let handler = thread::spawn(move || {
-                Node::count(actual_node, step);
+                Node::count(actual_node, step, end_node);
             });
             handlers.push(handler);
         }

@@ -1,5 +1,5 @@
 use std::{sync::{Mutex, Arc}, thread};
-
+use std::time::{SystemTime, UNIX_EPOCH};
 use point::Point;
 
 use super::point;
@@ -88,20 +88,19 @@ impl Node {
 
     pub fn count(node: Arc<Mutex<Node>>, mut step: u32, end_node: Arc<Mutex<Node>>) {
         let lock_end_node = end_node.lock().unwrap();
-        if lock_end_node.position != 0 && lock_end_node.position < step {
-            println!("{step}");
+        println!("lock_end_node : {:?}", lock_end_node);
+        let position = lock_end_node.position;
+        println!("position de lock_end_node : {position},\n et step : {step}");
+        drop(lock_end_node);
+
+        if position != 0 && position < step {
             println!("fini");
+            println!("{step}");
             return;
         } 
-        drop(lock_end_node);
 
         step += 1;
         let lock_node = node.lock().unwrap();
-        // let children_nodes = lock_node.children;
-
-        if lock_node.point.value == 123 {
-            println!("{step}");
-        }
         
         let mut nodes_to_continue = vec![];
         for child_node in lock_node.children.iter() {

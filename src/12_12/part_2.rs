@@ -1,4 +1,4 @@
-use std::{sync::{Mutex, Arc}, thread};
+use std::{sync::{Mutex, Arc}, thread, vec};
 
 use AoC_2022::text_file_reader::TextFileReader;
 
@@ -24,15 +24,22 @@ fn main() {
     
     let puzzle = get_puzzle();
     let map = init_map(puzzle);
-    let tree = get_way(map);
-    // println!("tree : {:?}", tree.lock().unwrap().root_node);
-    // tree.lock().unwrap().print();
-    let tree_lock = tree.lock().unwrap();
-    tree_lock.count_step();
-    tree_lock.print_step();
+    let possible_starts = get_possible_starts(&map);
+    // println!("possible_starts : {:?}", possible_starts);
 
-    // println!("Nombre de pas : {}", smallest_number_of_steps_to_reach_the_end);
-    
+    for possible_start in &possible_starts {
+        let tree = get_way(map.clone(), possible_start, &possible_starts);
+        let tree_lock = tree.lock().unwrap();
+        if tree_lock.end_node.is_none() {
+            continue;
+        }
+        tree_lock.count_step();
+        tree_lock.print_step();
+    }
+    // let tree = get_way(map);
+    // let tree_lock = tree.lock().unwrap();
+    // tree_lock.count_step();
+    // tree_lock.print_step();
 }
 
 fn get_puzzle() -> Vec<String> {
@@ -59,17 +66,76 @@ fn init_map(puzzle: Vec<String>) -> Vec<Vec<u32>> {
     map
 }
 
-fn get_way(map: Vec<Vec<u32>>) -> Arc<Mutex<Tree>> {
-    let initial_position = get_position(&map, 96); // (y, x)
+fn get_possible_starts(map: &Vec<Vec<u32>>) -> Vec<(i32, i32)> {
+    let mut possible_starts = vec![];
+
+    let height = map.len();
+    let width = map[0].len();
+
+    for (y, line) in map.iter().enumerate() {
+        for (x, value) in line.iter().enumerate() {
+            if x != 0 && x != width - 1 {
+                if y != 0 && y != height - 1 {
+                    continue;
+                }
+            }
+
+            if *value == 96 || *value == 97 {
+                if is_possible_start(y, x, map, *value) {
+                    possible_starts.push((y as i32, x as i32));
+                }
+            }
+        }
+    }
+
+    possible_starts
+}
+
+fn is_possible_start(y: usize, x: usize, map: &Vec<Vec<u32>>, value: u32) -> bool {
+    let mut possible_ways = vec![];
+    possible_ways.push((y + 1, x));
+    possible_ways.push((y, x + 1));
+
+    if y != 0 {
+        possible_ways.push((y - 1, x));
+    }
+    if x != 0 {
+        possible_ways.push((y, x - 1));
+    }
+
+
+    for possible_way in possible_ways {
+        
+        match map.get(possible_way.0) {
+            None => (),
+            Some(line) => {
+                match line.get(possible_way.1) {
+                   None => (),
+                   Some(next_value) => {
+                       if value >= *next_value || value + 1 >= *next_value {
+                           return true;
+                       }
+                   } 
+                }
+            }
+        }
+    }
+
+    false
+}
+
+fn get_way(map: Vec<Vec<u32>>, initial_position: &(i32, i32), possible_starts: &Vec<(i32, i32)>) -> Arc<Mutex<Tree>> {
+    // Trouver toutes les valeurs de débuts possibles et les utiliser aussi pour indiquer par quelle valeur ne pas passer (même pour revenir vers l'arrière)
+    // let initial_position = get_position(&map, 96); // (y, x)
     let final_position = get_position(&map, 123); // (y, x)
     println!("Position finale: {:?}", final_position);
 
-    let tree = Arc::new(Mutex::new(Tree::new(initial_position, 96)));
+    let tree = Arc::new(Mutex::new(Tree::new(initial_position.clone(), 97)));
     let lock_tree = tree.lock().unwrap();
-    let actual_node = lock_tree.get_existing_node_by_position(initial_position).unwrap();
+    let actual_node = lock_tree.get_existing_node_by_position(initial_position.clone()).unwrap();
     drop(lock_tree);
 
-    find_path(&map, actual_node, final_position, Arc::clone(&tree),  vec![initial_position]);
+    find_path(&map, actual_node, final_position, Arc::clone(&tree),  possible_starts.clone());
     tree
 }
 

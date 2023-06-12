@@ -171,25 +171,12 @@ fn get_possible_ways(map: &Vec<Vec<u32>>, current_position: (i32, i32), final_po
             }
         };
 
-        // let height = if actual_value > value_of_the_next_position {
-        //     actual_value - value_of_the_next_position
-        // } else {
-        //     value_of_the_next_position - actual_value
-        // };
-        // if height > 1 {
-        //     continue;
-        // }
-
         if actual_value < value_of_the_next_position {
             if value_of_the_next_position - actual_value > 1 {
                 continue;
             }
         }
 
-        // if actual_value > value_of_the_next_position || value_of_the_next_position - actual_value > 1 {
-        //     continue;
-        // }
-
         possible_ways.push(
             PossibleWay {
                 coordinate: next_position,
@@ -201,111 +188,3 @@ fn get_possible_ways(map: &Vec<Vec<u32>>, current_position: (i32, i32), final_po
     possible_ways.sort_unstable_by(|a, b| a.get_distance_from(final_position).total_cmp(&b.get_distance_from(final_position)));
     possible_ways
 }
-
-/* 
-fn find_path(map: &Vec<Vec<u32>>, current_position: (i32, i32), final_position: (i32, i32), mut positions_visited: Vec<(i32, i32)>, current_step_count: i32, mut current_smallest_step_count: i32) -> i32 {
-    if current_smallest_step_count > 0 {
-        current_smallest_step_count -= 1;
-
-        if current_smallest_step_count <= 0 {
-            return 0;
-        }
-
-        if current_step_count >= current_smallest_step_count {
-            return 0;
-        }
-    }
-
-    let actual_value = map[current_position.0 as usize][current_position.1 as usize];
-    if actual_value == 123 {
-        return 1;
-    }
-
-    let mut smallest_count = 0;
-    let mut find_a_way = false;
-    let possible_ways = get_possible_ways(map, current_position, final_position, actual_value, &positions_visited);
-    println!("possibles_ways : {:?}", possible_ways);
-
-    positions_visited.extend(possible_ways.iter().map(|w| w.coordinate));
-    for possible_way in possible_ways {
-        positions_visited.push(possible_way.coordinate);
-        let count = find_path(map, possible_way.coordinate, final_position, positions_visited.clone(), current_step_count + 1, current_smallest_step_count);
-        positions_visited.pop();
-
-        if count != 0 {
-            println!("voie trouvée");
-            find_a_way = true;
-            if smallest_count == 0 || count < smallest_count {
-                smallest_count = count;
-
-                if smallest_count < current_smallest_step_count {
-                    current_smallest_step_count = smallest_count;
-                }
-            }
-        }
-        
-    }
-    
-    if find_a_way {
-        smallest_count += 1;
-    }
-    smallest_count
-}
-
-fn get_possible_ways(map: &Vec<Vec<u32>>, current_position: (i32, i32), final_position: (i32, i32), actual_value: u32, positions_visited: &Vec<(i32, i32)>) -> Vec<PossibleWay> {
-    let mut possible_ways = vec![];
-    
-    for i in 0..4 {
-        let next_move = match i {
-            0 => (-1, 0), // UP
-            1 => (1, 0), // DOWN
-            2 => (0, -1), // LEFT
-            3 => (0, 1), // RIGH
-            _ => (0, 0)
-        };
-
-        let (y, x) = (current_position.0 as i32 + next_move.0, current_position.1 as i32 + next_move.1);
-        if y < 0 || x < 0 {
-            continue;
-        }
-
-        let next_position = (y as i32, x as i32);
-        if positions_visited.contains(&next_position) {
-            continue;
-        }
-
-
-        let value_of_the_next_position = match map.get(next_position.0 as usize) {
-            None => continue,
-            Some(line) => {
-                match line.get(next_position.1 as usize) {
-                    None => continue,
-                    Some(v) => *v
-                }
-            }
-        };
-
-        // let height = if actual_value > value_of_the_next_position {
-        //     actual_value - value_of_the_next_position
-        // } else {
-        //     value_of_the_next_position - actual_value
-        // };
-        // if height > 1 {
-        //     continue;
-        // }
-
-        if actual_value > value_of_the_next_position || value_of_the_next_position - actual_value > 1 {
-            continue;
-        }
-
-        possible_ways.push(
-            PossibleWay {
-                coordinate: next_position,
-                value: value_of_the_next_position
-            }
-        );
-    }
-
-    possible_ways.sort_unstable_by(|a, b| a.get_distance_from(final_position).total_cmp(&b.get_distance_from(final_position)));
-    possible_ways
-} */

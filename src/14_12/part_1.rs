@@ -54,6 +54,7 @@ fn get_rock_structure_path(puzzle: Vec<String>) -> HashSet<Line> {
 struct MovingSandGrain {
     actual_position: (u32, u32),
     previous_position: Option<(u32, u32)>,
+    is_falling: bool
 }
 
 fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (u32, u32)) -> u32 {
@@ -84,7 +85,7 @@ fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (
 
         // check that the drop point is not in a wall or another sand grain // USELESS
 
-        let moving_sand_grain = MovingSandGrain { actual_position: falling_sand_grain, previous_position: None };
+        let moving_sand_grain = MovingSandGrain { actual_position: falling_sand_grain, previous_position: None, is_falling: false };
         if !fall_continuing(
             &rock_structure_path,
             origin,
@@ -116,39 +117,12 @@ fn fall_continuing(
     let fall_from_origin = falling_sand_grain == origin;
     
     if fall_from_origin {
-        let mut vertical_lines = rock_structure_path.iter().filter(|l| l.direction == Direction::Vertical && l.direction_coordinate == falling_sand_grain.0).collect::<Vec<&Line>>();
-        vertical_lines.sort_by(|a, b| a.vertex_a.cmp(&b.vertex_a));
-
-        let mut horizontal_lines = rock_structure_path.iter().filter(
-            |l| 
-            l.direction == Direction::Horizontal && l.vertex_a <= falling_sand_grain.0 && l.vertex_b >= falling_sand_grain.0
-        ).collect::<Vec<&Line>>();
-        horizontal_lines.sort_by(|a, b| a.direction_coordinate.cmp(&b.direction_coordinate));
-
-        let crossed_vertical_line = vertical_lines.get(0);
-        let crossed_horizontal_line = get_crossed_horizontal_line(horizontal_lines);
-
-        let mut next_coordinates = None;
-
-        if crossed_vertical_line.is_some() || crossed_horizontal_line.is_some() {
-            if crossed_vertical_line.is_some() && crossed_horizontal_line.is_some() {
-                let crossed_vertical_line = crossed_vertical_line.unwrap();
-                let crossed_horizontal_line = crossed_horizontal_line.unwrap();
-                if crossed_vertical_line.vertex_a >= crossed_horizontal_line.direction_coordinate {
-                    next_coordinates = Some((origin.0, crossed_vertical_line.vertex_a - 1));
-                } else {
-                    next_coordinates = Some((origin.0, crossed_horizontal_line.direction_coordinate - 1));
-                }
-            } else if crossed_vertical_line.is_some() {
-                next_coordinates = Some((origin.0, crossed_vertical_line.unwrap().vertex_a - 1));
-            } else {
-                next_coordinates = Some((origin.0, crossed_horizontal_line.unwrap().direction_coordinate- 1));
+        falling_sand_grain = match get_next_drop_point(rock_structure_path, &origin) {
+            Some(v) => v,
+            None => {
+                return false; // manages case of empty rock structure
             }
-        }
-
-        // return next_coordinates.is_some();
-
-        falling_sand_grain = next_coordinates.unwrap();
+        };
     }
     
     // je regarde ensuite s'il peut bouger (à gauche, puis à droite)
@@ -156,9 +130,112 @@ fn fall_continuing(
     // - si oui je reviens dans cette méthode maj les différentes ref,
     // puis je rechecke s'il peut bouger et je répète cela x fois...
     // - si non, c'est une chute et je lance une recherche tel que je viens de le faire depuis origin, et une fois sol touché je reviens ici et relance le tout
+    let mut next_position = (falling_sand_grain.0 - 1, falling_sand_grain.1 + 1);
+    if !sand_grains.contains(&next_position) {
+        // can move to the left ?
+        if can_move(rock_structure_path, &next_position) {
+            falling_sand_grain = next_position;
+
+            moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
+            moving_sand_grain.actual_position = next_position;
+            moving_sand_grain.is_falling = false;
+
+            next_position.1 += 1;
+            // can move go down ?
+            if can_move(rock_structure_path, &next_position) {
+                let next_position = match get_next_drop_point(rock_structure_path, &next_position) {
+                    Some(v) => v,
+                    None => {
+                        return false;
+                    }
+                };
+                falling_sand_grain = next_position;
+
+                moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
+                moving_sand_grain.actual_position = next_position;
+                moving_sand_grain.is_falling = true;
+            }
+        } else {
+            next_position.0 = falling_sand_grain.0 + 1;
+            // can move to the right ?
+            if can_move(rock_structure_path, &next_position) {
+                falling_sand_grain = next_position;
     
+                moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
+                moving_sand_grain.actual_position = next_position;
+                moving_sand_grain.is_falling = false;
     
-    false
+                next_position.1 += 1;
+                // can move go down ?
+                if can_move(rock_structure_path, &next_position) {
+                    let next_position = match get_next_drop_point(rock_structure_path, &next_position) {
+                        Some(v) => v,
+                        None => {
+                            return false;
+                        }
+                    };
+                    falling_sand_grain = next_position;
+    
+                    moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
+                    moving_sand_grain.actual_position = next_position;
+                    moving_sand_grain.is_falling = true;
+                }
+            } else { // Can't move left or right 
+                let is_new_ref = is_new_ref(&moving_sand_grain);
+            }
+        }
+    }
+    
+    true
+}
+
+fn can_move(rock_structure_path: &HashSet<Line>, next_position: &(u32, u32)) -> bool {
+    let vertical_lines = rock_structure_path.iter().filter(
+        |l| 
+        l.direction == Direction::Vertical && l.direction_coordinate == next_position.0 && l.vertex_a <= next_position.1 && l.vertex_b >= next_position.1
+    ).collect::<Vec<&Line>>();
+
+    let horizontal_lines = rock_structure_path.iter().filter(
+        |l| 
+        l.direction == Direction::Horizontal && l.direction_coordinate == next_position.1 && l.vertex_a <= next_position.0 && l.vertex_b >= next_position.0
+    ).collect::<Vec<&Line>>();
+
+    vertical_lines.is_empty() && horizontal_lines.is_empty()
+}
+
+fn get_next_drop_point(rock_structure_path: &HashSet<Line>, next_position: &(u32, u32)) -> Option<(u32, u32)> {
+    let mut vertical_lines = rock_structure_path.iter().filter(
+        |l| 
+        l.direction == Direction::Vertical && l.direction_coordinate == next_position.0 && l.vertex_a > next_position.1
+    ).collect::<Vec<&Line>>();
+    vertical_lines.sort_by(|a, b| a.vertex_a.cmp(&b.vertex_a));
+
+    let mut horizontal_lines = rock_structure_path.iter().filter(
+        |l| 
+        l.direction == Direction::Horizontal && l.direction_coordinate > next_position.1 + 1 && l.vertex_a <= next_position.0 && l.vertex_b >= next_position.0
+    ).collect::<Vec<&Line>>();
+    horizontal_lines.sort_by(|a, b| a.direction_coordinate.cmp(&b.direction_coordinate));
+
+    let crossed_vertical_line = vertical_lines.get(0);
+    let crossed_horizontal_line = get_crossed_horizontal_line(horizontal_lines);
+
+    if crossed_vertical_line.is_some() || crossed_horizontal_line.is_some() {
+        if crossed_vertical_line.is_some() && crossed_horizontal_line.is_some() {
+            let crossed_vertical_line = crossed_vertical_line.unwrap();
+            let crossed_horizontal_line = crossed_horizontal_line.unwrap();
+            if crossed_vertical_line.vertex_a >= crossed_horizontal_line.direction_coordinate {
+                return Some((next_position.0, crossed_vertical_line.vertex_a - 1));
+            } else {
+                return Some((next_position.0, crossed_horizontal_line.direction_coordinate - 1));
+            }
+        } else if crossed_vertical_line.is_some() {
+            return Some((next_position.0, crossed_vertical_line.unwrap().vertex_a - 1));
+        } else {
+            return Some((next_position.0, crossed_horizontal_line.unwrap().direction_coordinate- 1));
+        }
+    }
+
+    None
 }
 
 fn get_crossed_horizontal_line(mut horizontal_lines: Vec<&Line>) -> Option<Line> {
@@ -192,4 +269,12 @@ fn get_crossed_horizontal_line(mut horizontal_lines: Vec<&Line>) -> Option<Line>
     };
 
     Some(line)
+}
+
+fn is_new_ref(moving_sand_grain: &MovingSandGrain) -> bool {
+    if let distance = moving_sand_grain.previous_position.is_some() {
+        let previous_position = moving_sand_grain.previous_position.as_ref().unwrap();
+    };
+
+    false
 }

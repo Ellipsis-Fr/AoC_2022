@@ -1,4 +1,6 @@
 use std::collections::{HashSet, HashMap};
+use num::integer::sqrt;
+use num::pow;
 
 use AoC_2022::text_file_reader::TextFileReader;
 mod line;
@@ -19,7 +21,7 @@ fn main() {
     
     let puzzle = get_puzzle();
     let rock_structure_path = get_rock_structure_path(puzzle);
-    const origin: (u32, u32) = (500, 0); // (x, y)
+    const origin: (i32, i32) = (500, 0); // (x, y)
     // println!("{}", rock_structure_path.len());
     // println!("{:?}", rock_structure_path);
 
@@ -52,12 +54,12 @@ fn get_rock_structure_path(puzzle: Vec<String>) -> HashSet<Line> {
 }
 
 struct MovingSandGrain {
-    actual_position: (u32, u32),
-    previous_position: Option<(u32, u32)>,
+    actual_position: (i32, i32),
+    previous_position: Option<(i32, i32)>,
     is_falling: bool
 }
 
-fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (u32, u32)) -> u32 {
+fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (i32, i32)) -> u32 {
     let mut actual_sand_grain = origin; // current sand grain on which new sand falls, used as reference
     let mut sand_grains = vec![]; // list of all fallen sand grains
     let mut references_sand_grain = vec![origin]; // list of all sand grains that have been a reference
@@ -106,18 +108,18 @@ fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (
 
 fn fall_continuing(
     rock_structure_path: &HashSet<Line>,
-    origin: (u32, u32),
-    mut actual_sand_grain: &mut (u32, u32),
-    mut sand_grains: &mut Vec<(u32, u32)>,
-    mut references_sand_grain: &mut Vec<(u32, u32)>,
-    mut drop_coordinates: &mut HashMap<(u32, u32), (u32, u32)>,
-    mut falling_sand_grain: (u32, u32),
+    origin: (i32, i32),
+    mut actual_sand_grain: &mut (i32, i32),
+    mut sand_grains: &mut Vec<(i32, i32)>,
+    mut references_sand_grain: &mut Vec<(i32, i32)>,
+    mut drop_coordinates: &mut HashMap<(i32, i32), (i32, i32)>,
+    mut falling_sand_grain: (i32, i32),
     mut moving_sand_grain: MovingSandGrain
 ) -> bool {
     let fall_from_origin = falling_sand_grain == origin;
     
     if fall_from_origin {
-        falling_sand_grain = match get_next_drop_point(rock_structure_path, &origin) {
+        falling_sand_grain = match get_next_drop_point(rock_structure_path, sand_grains, &origin) {
             Some(v) => v,
             None => {
                 return false; // manages case of empty rock structure
@@ -130,10 +132,10 @@ fn fall_continuing(
     // - si oui je reviens dans cette méthode maj les différentes ref,
     // puis je rechecke s'il peut bouger et je répète cela x fois...
     // - si non, c'est une chute et je lance une recherche tel que je viens de le faire depuis origin, et une fois sol touché je reviens ici et relance le tout
-    let mut next_position = (falling_sand_grain.0 - 1, falling_sand_grain.1 + 1);
-    if !sand_grains.contains(&next_position) {
+    loop {
+        let mut next_position = (falling_sand_grain.0 - 1, falling_sand_grain.1 + 1);
         // can move to the left ?
-        if can_move(rock_structure_path, &next_position) {
+        if can_move(rock_structure_path, sand_grains, &next_position) {
             falling_sand_grain = next_position;
 
             moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
@@ -142,8 +144,8 @@ fn fall_continuing(
 
             next_position.1 += 1;
             // can move go down ?
-            if can_move(rock_structure_path, &next_position) {
-                let next_position = match get_next_drop_point(rock_structure_path, &next_position) {
+            if can_move(rock_structure_path, sand_grains, &next_position) {
+                let next_position = match get_next_drop_point(rock_structure_path, sand_grains, &next_position) {
                     Some(v) => v,
                     None => {
                         return false;
@@ -158,7 +160,7 @@ fn fall_continuing(
         } else {
             next_position.0 = falling_sand_grain.0 + 1;
             // can move to the right ?
-            if can_move(rock_structure_path, &next_position) {
+            if can_move(rock_structure_path, sand_grains, &next_position) {
                 falling_sand_grain = next_position;
     
                 moving_sand_grain.previous_position = Some(moving_sand_grain.actual_position);
@@ -167,8 +169,8 @@ fn fall_continuing(
     
                 next_position.1 += 1;
                 // can move go down ?
-                if can_move(rock_structure_path, &next_position) {
-                    let next_position = match get_next_drop_point(rock_structure_path, &next_position) {
+                if can_move(rock_structure_path, sand_grains, &next_position) {
+                    let next_position = match get_next_drop_point(rock_structure_path, sand_grains, &next_position) {
                         Some(v) => v,
                         None => {
                             return false;
@@ -182,14 +184,24 @@ fn fall_continuing(
                 }
             } else { // Can't move left or right 
                 let is_new_ref = is_new_ref(&moving_sand_grain);
+
+                // si c'est la nouvelle ref alors :
+                // - si fall est à true il faut conserver le point de chute
+
+
+                break;
             }
-        }
+        } 
     }
     
     true
 }
 
-fn can_move(rock_structure_path: &HashSet<Line>, next_position: &(u32, u32)) -> bool {
+fn can_move(rock_structure_path: &HashSet<Line>, sand_grains: &Vec<(i32, i32)>, next_position: &(i32, i32)) -> bool {
+    if sand_grains.contains(&next_position) {
+        return false;
+    }
+
     let vertical_lines = rock_structure_path.iter().filter(
         |l| 
         l.direction == Direction::Vertical && l.direction_coordinate == next_position.0 && l.vertex_a <= next_position.1 && l.vertex_b >= next_position.1
@@ -203,7 +215,10 @@ fn can_move(rock_structure_path: &HashSet<Line>, next_position: &(u32, u32)) -> 
     vertical_lines.is_empty() && horizontal_lines.is_empty()
 }
 
-fn get_next_drop_point(rock_structure_path: &HashSet<Line>, next_position: &(u32, u32)) -> Option<(u32, u32)> {
+fn get_next_drop_point(rock_structure_path: &HashSet<Line>, sand_grains: &Vec<(i32, i32)>, next_position: &(i32, i32)) -> Option<(i32, i32)> {
+    let mut sand_grains_on_the_fall = sand_grains.iter().filter(|sand_grain| sand_grain.0 == next_position.0 && sand_grain.1 > next_position.1).collect::<Vec<&(i32, i32)>>();
+    sand_grains_on_the_fall.sort_by(|a, b| a.1.cmp(&b.1));
+
     let mut vertical_lines = rock_structure_path.iter().filter(
         |l| 
         l.direction == Direction::Vertical && l.direction_coordinate == next_position.0 && l.vertex_a > next_position.1
@@ -219,19 +234,35 @@ fn get_next_drop_point(rock_structure_path: &HashSet<Line>, next_position: &(u32
     let crossed_vertical_line = vertical_lines.get(0);
     let crossed_horizontal_line = get_crossed_horizontal_line(horizontal_lines);
 
+    let mut highest_landing = None; 
     if crossed_vertical_line.is_some() || crossed_horizontal_line.is_some() {
         if crossed_vertical_line.is_some() && crossed_horizontal_line.is_some() {
             let crossed_vertical_line = crossed_vertical_line.unwrap();
             let crossed_horizontal_line = crossed_horizontal_line.unwrap();
             if crossed_vertical_line.vertex_a >= crossed_horizontal_line.direction_coordinate {
-                return Some((next_position.0, crossed_vertical_line.vertex_a - 1));
+                highest_landing = Some(crossed_vertical_line.vertex_a - 1);
             } else {
-                return Some((next_position.0, crossed_horizontal_line.direction_coordinate - 1));
+                highest_landing = Some(crossed_horizontal_line.direction_coordinate - 1);
             }
         } else if crossed_vertical_line.is_some() {
-            return Some((next_position.0, crossed_vertical_line.unwrap().vertex_a - 1));
+            highest_landing = Some(crossed_vertical_line.unwrap().vertex_a - 1);
         } else {
-            return Some((next_position.0, crossed_horizontal_line.unwrap().direction_coordinate- 1));
+            highest_landing = Some(crossed_horizontal_line.unwrap().direction_coordinate - 1);
+        }
+    }
+
+    if highest_landing.is_some() || !sand_grains_on_the_fall.is_empty() {
+        match sand_grains_on_the_fall.get(0) {
+            None => {
+                return Some((next_position.0, highest_landing.unwrap()));
+            },
+            Some(v) => {
+                if highest_landing.is_some() && highest_landing.as_ref().unwrap() < &v.1 {
+                    return Some((next_position.0, highest_landing.unwrap()));
+                } else {
+                    return Some((next_position.0, v.1 - 1));
+                }
+            }            
         }
     }
 
@@ -272,9 +303,18 @@ fn get_crossed_horizontal_line(mut horizontal_lines: Vec<&Line>) -> Option<Line>
 }
 
 fn is_new_ref(moving_sand_grain: &MovingSandGrain) -> bool {
-    if let distance = moving_sand_grain.previous_position.is_some() {
+    if moving_sand_grain.previous_position.is_some() {
         let previous_position = moving_sand_grain.previous_position.as_ref().unwrap();
-    };
+        let distance = calculate_distance(&moving_sand_grain.actual_position, previous_position);
 
-    false
+        if distance == 1 {
+            return moving_sand_grain.is_falling;
+        }
+    }
+
+    true
+}
+
+fn calculate_distance(point_a: &(i32, i32), point_b: &(i32, i32)) -> i32 {
+    sqrt(pow((point_a.0 - point_b.0), 2) + pow((point_a.1 - point_b.1), 2))
 }

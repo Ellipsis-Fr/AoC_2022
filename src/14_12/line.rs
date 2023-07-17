@@ -6,7 +6,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    fn new(x1: u32, x2: u32) -> Self {
+    fn new(x1: i32, x2: i32) -> Self {
         if x1 == x2 {
             Direction::Vertical
         } else {
@@ -18,9 +18,9 @@ impl Direction {
 #[derive(Debug, Eq, Clone)]
 pub struct Line {
     pub direction: Direction,
-    pub direction_coordinate: u32,
-    pub vertex_a: u32,
-    pub vertex_b: u32,
+    pub direction_coordinate: i32,
+    pub vertex_a: i32,
+    pub vertex_b: i32,
 }
 
 impl Line {
@@ -53,10 +53,10 @@ impl Line {
         Line { direction, direction_coordinate, vertex_a, vertex_b }
     }
 
-    fn get_coordinates_from_point<'a>(point_a: &'a str, point_b: &'a str) -> ((u32, u32), (u32, u32)) {
-        let tuple_from_point = |point: &'a str| -> (u32, u32) {
+    fn get_coordinates_from_point<'a>(point_a: &'a str, point_b: &'a str) -> ((i32, i32), (i32, i32)) {
+        let tuple_from_point = |point: &'a str| -> (i32, i32) {
             let mut iter = point.split(",");
-            (iter.next().unwrap().trim().parse::<u32>().unwrap(), iter.next().unwrap().trim().parse::<u32>().unwrap())
+            (iter.next().unwrap().trim().parse::<i32>().unwrap(), iter.next().unwrap().trim().parse::<i32>().unwrap())
         };
 
         (tuple_from_point(point_a), tuple_from_point(point_b))

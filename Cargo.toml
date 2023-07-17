@@ -78,3 +78,4 @@ path = "src/14_12/part_1.rs"
 
 [dependencies]
 regex = "1"
+num = "0.4.1"

@@ -21,11 +21,11 @@ fn main() {
     
     let puzzle = get_puzzle();
     let rock_structure_path = get_rock_structure_path(puzzle);
-    const origin: (i32, i32) = (500, 0); // (x, y)
+    const ORIGIN: (i32, i32) = (500, 0); // (x, y)
     // println!("{}", rock_structure_path.len());
     // println!("{:?}", rock_structure_path);
 
-    let sand_unit_count_before_fall = get_sand_unit_count_before_fall(rock_structure_path, origin);
+    let sand_unit_count_before_fall = get_sand_unit_count_before_fall(rock_structure_path, ORIGIN);
     println!("sand unit count before fall : {sand_unit_count_before_fall}");
 }
 
@@ -82,7 +82,7 @@ fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (
         // initialize drop point at a coordinate offset by 1 in y (except for origin)
         let mut falling_sand_grain = actual_sand_grain; // drop point
         if actual_sand_grain != origin {
-            falling_sand_grain = (actual_sand_grain.0, actual_sand_grain.1 - 1);
+            falling_sand_grain.1 = actual_sand_grain.1 - 1;
         }
 
         // check that the drop point is not in a wall or another sand grain // USELESS
@@ -109,10 +109,10 @@ fn get_sand_unit_count_before_fall(rock_structure_path: HashSet<Line>, origin: (
 fn fall_continuing(
     rock_structure_path: &HashSet<Line>,
     origin: (i32, i32),
-    mut actual_sand_grain: &mut (i32, i32),
-    mut sand_grains: &mut Vec<(i32, i32)>,
-    mut references_sand_grain: &mut Vec<(i32, i32)>,
-    mut drop_coordinates: &mut HashMap<(i32, i32), (i32, i32)>,
+    actual_sand_grain: &mut (i32, i32),
+    sand_grains: &mut Vec<(i32, i32)>,
+    references_sand_grain: &mut Vec<(i32, i32)>,
+    drop_coordinates: &mut HashMap<(i32, i32), (i32, i32)>,
     mut falling_sand_grain: (i32, i32),
     mut moving_sand_grain: MovingSandGrain
 ) -> bool {
@@ -125,6 +125,8 @@ fn fall_continuing(
                 return false; // manages case of empty rock structure
             }
         };
+
+        moving_sand_grain.actual_position = falling_sand_grain;
     }
     
     // je regarde ensuite s'il peut bouger (à gauche, puis à droite)
@@ -182,12 +184,18 @@ fn fall_continuing(
                     moving_sand_grain.actual_position = next_position;
                     moving_sand_grain.is_falling = true;
                 }
-            } else { // Can't move left or right 
-                let is_new_ref = is_new_ref(&moving_sand_grain);
+            } else { // Can't move left or right
+                let actual_position = moving_sand_grain.actual_position;
+                sand_grains.push(actual_position);
+                
+                if is_new_ref(&moving_sand_grain) {
+                    if moving_sand_grain.is_falling {
+                        drop_coordinates.insert(moving_sand_grain.previous_position.unwrap(), *actual_sand_grain);
+                    }
 
-                // si c'est la nouvelle ref alors :
-                // - si fall est à true il faut conserver le point de chute
-
+                    *actual_sand_grain = actual_position;
+                    references_sand_grain.push(actual_position);
+                }
 
                 break;
             }
@@ -227,7 +235,7 @@ fn get_next_drop_point(rock_structure_path: &HashSet<Line>, sand_grains: &Vec<(i
 
     let mut horizontal_lines = rock_structure_path.iter().filter(
         |l| 
-        l.direction == Direction::Horizontal && l.direction_coordinate > next_position.1 + 1 && l.vertex_a <= next_position.0 && l.vertex_b >= next_position.0
+        l.direction == Direction::Horizontal && l.direction_coordinate > next_position.1 && l.vertex_a <= next_position.0 && l.vertex_b >= next_position.0
     ).collect::<Vec<&Line>>();
     horizontal_lines.sort_by(|a, b| a.direction_coordinate.cmp(&b.direction_coordinate));
 
@@ -316,5 +324,5 @@ fn is_new_ref(moving_sand_grain: &MovingSandGrain) -> bool {
 }
 
 fn calculate_distance(point_a: &(i32, i32), point_b: &(i32, i32)) -> i32 {
-    sqrt(pow((point_a.0 - point_b.0), 2) + pow((point_a.1 - point_b.1), 2))
+    sqrt(pow(point_a.0 - point_b.0, 2) + pow(point_a.1 - point_b.1, 2))
 }

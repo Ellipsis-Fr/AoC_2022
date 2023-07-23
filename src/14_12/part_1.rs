@@ -22,8 +22,6 @@ fn main() {
     let puzzle = get_puzzle();
     let rock_structure_path = get_rock_structure_path(puzzle);
     const ORIGIN: (i32, i32) = (500, 0); // (x, y)
-    // println!("{}", rock_structure_path.len());
-    // println!("{:?}", rock_structure_path);
 
     let sand_unit_count_before_fall = get_sand_unit_count_before_fall(rock_structure_path, ORIGIN);
     println!("sand unit count before fall : {sand_unit_count_before_fall}");
@@ -248,9 +246,9 @@ fn get_next_drop_point(rock_structure_path: &HashSet<Line>, sand_grains: &Vec<(i
             let crossed_vertical_line = crossed_vertical_line.unwrap();
             let crossed_horizontal_line = crossed_horizontal_line.unwrap();
             if crossed_vertical_line.vertex_a >= crossed_horizontal_line.direction_coordinate {
-                highest_landing = Some(crossed_vertical_line.vertex_a - 1);
-            } else {
                 highest_landing = Some(crossed_horizontal_line.direction_coordinate - 1);
+            } else {
+                highest_landing = Some(crossed_vertical_line.vertex_a - 1);
             }
         } else if crossed_vertical_line.is_some() {
             highest_landing = Some(crossed_vertical_line.unwrap().vertex_a - 1);

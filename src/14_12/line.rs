@@ -61,6 +61,23 @@ impl Line {
 
         (tuple_from_point(point_a), tuple_from_point(point_b))
     }
+
+    pub fn get_highest_y_coordinate(&self, other_line: &Line) -> i32 {
+        let self_y = match self.direction {
+            Direction::Horizontal => self.direction_coordinate,
+            Direction::Vertical => self.vertex_b
+        };
+
+        let other_y = match other_line.direction {
+            Direction::Horizontal => other_line.direction_coordinate,
+            Direction::Vertical => other_line.vertex_b
+        };
+
+        match self_y.cmp(&other_y) {
+            std::cmp::Ordering::Less => other_y,
+            std::cmp::Ordering::Greater | std::cmp::Ordering::Equal => self_y
+        }
+    }
 }
 
 impl PartialEq for Line {
@@ -205,5 +222,66 @@ mod tests {
         assert!(vertical_lines.iter().all(|l| l.direction == Direction::Vertical));
 
         assert_eq!(vertical_lines.get(0).unwrap().direction_coordinate, 509);
+    }
+
+    #[test]
+    fn test_get_highest_y_coordinate() {
+        // Given
+        let point_a = " 515,60";
+        let point_b = " 515,52 ";
+        let line_1 = Line::new(point_a, point_b);
+        
+        let point_c = "515,60 ";
+        let point_d = "517,60";
+        let line_2 = Line::new(point_c, point_d);
+
+        let point_e = "509,60 ";
+        let point_f = "509,41";
+        let line_3 = Line::new(point_e, point_f);
+
+        let point_g = "515,60 ";
+        let point_h = "515,41";
+        let line_4 = Line::new(point_g, point_h);
+
+        let point_i = "515,52";
+        let point_j = "515,60";
+        let line_5 = Line::new(point_i, point_j);
+
+        let point_k = "518,59";
+        let point_l = "518,75";
+        let line_6 = Line::new(point_k, point_l);
+
+        let point_m = "499,78";
+        let point_n = "513,78";
+        let line_7 = Line::new(point_m, point_n);
+        
+        let mut lines = HashSet::new();
+        lines.insert(line_1);
+        lines.insert(line_2);
+        lines.insert(line_3);
+        lines.insert(line_4);
+        lines.insert(line_5);
+        lines.insert(line_6);
+        lines.insert(line_7);
+
+
+        // When
+        let mut horizontal_lines = lines.iter().filter(|l| l.direction == Direction::Horizontal).collect::<Vec<&Line>>();
+        horizontal_lines.sort_by(|a, b| a.direction_coordinate.cmp(&b.direction_coordinate));
+        horizontal_lines.reverse();
+        
+        let mut vertical_lines = lines.iter().filter(|l| l.direction == Direction::Vertical).collect::<Vec<&Line>>();
+        vertical_lines.sort_by(|a, b| a.vertex_b.cmp(&b.vertex_b));
+        vertical_lines.reverse();
+
+
+        // Then
+        let horizontal_line = horizontal_lines.get(0).unwrap();
+        let vertical_line = vertical_lines.get(0).unwrap();
+
+        assert_eq!(horizontal_line.direction_coordinate, 78);
+        assert_eq!(vertical_line.vertex_b, 75);
+
+        assert_eq!(vertical_line.get_highest_y_coordinate(horizontal_line), 78);
     }
 }

@@ -4,18 +4,30 @@ use num::integer::sqrt;
 use num::pow;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-struct Point(i32, i32);
+pub struct Point(pub i64, pub i64);
 
 impl Point {
-    fn new(x: i32, y: i32) -> Self {
+    fn new(x: i64, y: i64) -> Self {
         Point(x, y)
     }
 
-    pub fn get_manhattan_distance(&self, other: &Point) -> i32 {
+    pub fn get_manhattan_distance(&self, other: &Point) -> i64 {
+        println!("self : {:?}, other {:?}", self, other);
         sqrt(pow(other.0 - self.0, 2)) + sqrt(pow(other.1 - self.1, 2))
+        // let mut x = other.0 - self.0;
+        // if x < 0 {
+        //     x *= -1;
+        // }
+
+        // let mut y = other.1 - self.1;
+        // if y < 0 {
+        //     y *= -1;
+        // }
+
+        // x + y
     }
 
-    pub fn get_all_point_from_a_perimeter(&self, radius: i32) -> HashSet<Point> {
+    pub fn get_all_point_from_a_perimeter(&self, radius: i64) -> HashSet<Point> {
         let mut points = HashSet::new();
         points.insert(self.clone());
 
@@ -27,7 +39,7 @@ impl Point {
         points
     }
 
-    fn get_all_points_in_quarter_circle(mut center: Point, radius: i32, num_quarter: i32) -> HashSet<Point> {
+    fn get_all_points_in_quarter_circle(mut center: Point, radius: i64, num_quarter: i32) -> HashSet<Point> {
         let mut points = HashSet::new();
 
         let mut factor = (1, 1);
@@ -70,7 +82,7 @@ impl Point {
 
 const INIT_BEACON: &str = "closest beacon is at";
 #[derive(Debug, Clone, Copy)]
-struct Beacon {
+pub struct Beacon {
     pub position: Point,
 }
 
@@ -118,7 +130,7 @@ impl Sensor {
 }
 
 
-fn slices_sentence_to_find_coordinate(init_sentence: &str, sentence_to_slice: &str) -> (i32, i32) {
+fn slices_sentence_to_find_coordinate(init_sentence: &str, sentence_to_slice: &str) -> (i64, i64) {
     let start = init_sentence.find(sentence_to_slice).unwrap();
     let end = start + init_sentence.len();
 
@@ -130,7 +142,7 @@ fn slices_sentence_to_find_coordinate(init_sentence: &str, sentence_to_slice: &s
     for coordinate_str in coordinates_str {
         let index = coordinate_str.find("=").unwrap() + 1;
         let coordinate = &coordinate_str[index..];
-        coordinates.push(coordinate.parse::<i32>().unwrap());
+        coordinates.push(coordinate.parse::<i64>().unwrap());
     }
 
 

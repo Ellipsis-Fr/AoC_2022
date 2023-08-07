@@ -12,19 +12,7 @@ impl Point {
     }
 
     pub fn get_manhattan_distance(&self, other: &Point) -> i64 {
-        println!("self : {:?}, other {:?}", self, other);
         sqrt(pow(other.0 - self.0, 2)) + sqrt(pow(other.1 - self.1, 2))
-        // let mut x = other.0 - self.0;
-        // if x < 0 {
-        //     x *= -1;
-        // }
-
-        // let mut y = other.1 - self.1;
-        // if y < 0 {
-        //     y *= -1;
-        // }
-
-        // x + y
     }
 
     pub fn get_all_point_from_a_perimeter(&self, radius: i64) -> HashSet<Point> {
@@ -101,7 +89,8 @@ const INIT_SENSOR: &str = "Sensor at";
 #[derive(Debug, Clone, Copy)]
 pub struct Sensor {
     position: Point,
-    beacon: Beacon
+    beacon: Beacon,
+    distance: i64
 }
 
 impl Sensor {
@@ -112,8 +101,11 @@ impl Sensor {
 
         let beacon = Beacon::new(init_beacon);
         let (x, y) = slices_sentence_to_find_coordinate(init_sensor, INIT_SENSOR);
+        let position = Point::new(x, y);
 
-        Sensor { position: Point::new(x, y), beacon }
+        let distance = position.get_manhattan_distance(beacon.get_position());
+
+        Sensor { position, beacon, distance }
     }
 
     pub fn get_position(&self) -> &Point {
@@ -126,6 +118,10 @@ impl Sensor {
 
     pub fn get_beacon_position(&self) -> &Point {
         &self.beacon.get_position()
+    }
+
+    pub fn get_distance(&self) -> i64 {
+        self.distance
     }
 }
 

@@ -1,7 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 use AoC_2022::text_file_reader::TextFileReader;
 use device::{Sensor, Point};
+use num::{integer::sqrt, pow};
 
 mod device;
 
@@ -10,13 +11,9 @@ fn main() {
     
     let puzzle = get_puzzle();
     let sensors = get_sensors(puzzle);
-    // println!("Sensors : {:?}", sensors);
-    
-    let coordinates_of_all_signals = get_coordinates_of_all_signals(&sensors);
-    // println!("coordinates_of_all_signals : {:?}", coordinates_of_all_signals);
     
     let row = 2_000_000;
-    let coordinate_count_that_cannot_contain_a_beacon_in_a_row = get_coordinate_count_that_cannot_contain_a_beacon_in_a_row(&sensors, coordinates_of_all_signals, row);
+    let coordinate_count_that_cannot_contain_a_beacon_in_a_row = get_coordinate_count_that_cannot_contain_a_beacon_in_a_row(sensors, row);
     println!("count of positions that cannot contain a beacon in row {row} : {coordinate_count_that_cannot_contain_a_beacon_in_a_row}");
 
 }
@@ -37,31 +34,50 @@ fn get_sensors(puzzle: Vec<String>) -> Vec<Sensor> {
     sensors
 }
 
-fn get_coordinates_of_all_signals(sensors: &Vec<Sensor>) -> HashSet<Point> {
-    let mut signal_coordinates = HashSet::new();
-
-    for sensor in sensors {
-        let distance_between_sensor_and_beacon = sensor.get_position().get_manhattan_distance(sensor.get_beacon_position());
-        println!("distance : {distance_between_sensor_and_beacon}");
-        signal_coordinates.extend(&sensor.get_position().get_all_point_from_a_perimeter(distance_between_sensor_and_beacon));
-    }
-
-
-    signal_coordinates
-}
-
-fn get_coordinate_count_that_cannot_contain_a_beacon_in_a_row(sensors: &Vec<Sensor>, coordinates_of_all_signals: HashSet<Point>, row: i64) -> usize {
+fn get_coordinate_count_that_cannot_contain_a_beacon_in_a_row(sensors: Vec<Sensor>, row: i64) -> usize {
     let mut sensors_or_beacon_in_a_row = HashSet::new();
-
-    for sensor in sensors {
+    
+    for sensor in &sensors {
         if sensor.get_position().1 == row {
-            sensors_or_beacon_in_a_row.insert(sensor.get_position());
+            sensors_or_beacon_in_a_row.insert(sensor.get_position().0);
         }
         if sensor.get_beacon_position().1 == row {
-            sensors_or_beacon_in_a_row.insert(sensor.get_beacon_position());
+            sensors_or_beacon_in_a_row.insert(sensor.get_beacon_position().0);
+        }
+    }
+    
+    let mut coordinates_occupied_in_a_row: HashSet<i64> = HashSet::new();
+    for sensor in &sensors {
+        let center = sensor.get_position();
+        let radius = sensor.get_distance();
+
+        if (center.1 - radius) <= row && row <= (center.1 + radius) {
+            let coordinates_occupied_in_this_perimeter = get_coordinates_from_a_perimeter(center, radius, row);
+            coordinates_occupied_in_a_row.extend(coordinates_occupied_in_this_perimeter.iter())
         }
     }
 
-    let coordinates_occupied_in_a_row = coordinates_of_all_signals.iter().filter(|coordinate| coordinate.1 == row).collect::<HashSet<&Point>>();
     coordinates_occupied_in_a_row.len() - sensors_or_beacon_in_a_row.len()
+}
+
+fn get_coordinates_from_a_perimeter(center: &Point, radius: i64, row: i64) -> VecDeque<i64> {
+    let mut coordinates = VecDeque::new();
+    let min_x = center.0 - radius;
+    let max_x = center.0 + radius;
+
+    for x in min_x..=max_x {
+        coordinates.push_back(x);
+    }
+
+    if row == center.1 {
+        return coordinates;
+    }
+
+    let shift = sqrt(pow(center.1 - row, 2));
+    for _ in 0..shift {
+        coordinates.pop_front();
+        coordinates.pop_back();
+    }
+
+    coordinates
 }

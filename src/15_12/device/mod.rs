@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 use num::integer::sqrt;
 use num::pow;
@@ -16,55 +16,69 @@ impl Point {
     }
 
     pub fn get_all_point_from_a_perimeter(&self, radius: i64) -> HashSet<Point> {
-        let mut points = HashSet::new();
-        points.insert(self.clone());
-
-        for num_quarter in 1..=4 {
-            points.extend(&Point::get_all_points_in_quarter_circle(self.clone(), radius, num_quarter));
-        }
+        // Scope of circle
+        let center_x = self.0;
+        let min_x = self.0 - radius;
+        let max_x = self.0 + radius;
         
-
-        points
-    }
-
-    fn get_all_points_in_quarter_circle(mut center: Point, radius: i64, num_quarter: i32) -> HashSet<Point> {
-        let mut points = HashSet::new();
-
-        let mut factor = (1, 1);
-        let mut is_inversed = false;
+        let center_y = self.1;
+        let min_y = self.1 - radius;
+        let max_y = self.1 + radius;
         
-        match num_quarter {
-            1 => (),
-            3 => factor = (-1, -1),
-            2 | 4 => {
-                is_inversed = true;
-                center = Point(center.1, center.0);
-                if num_quarter == 2 {
-                    factor.0 = -1;
-                } else {
-                    factor.1 = -1;
-                }
-            },
-            _ => panic!("num_quarter is limited to 1 to 4")
+        // let diameter_x = 1 + sqrt(pow(max_x - min_x, 2));
+        // let diameter_y = 1 + sqrt(pow(max_y - min_y, 2));
+
+        // let x_coordinates = vec![-1; diameter_x as usize];
+        // let y_coordinates = vec![x_coordinates; diameter_y as usize];
+
+        // Creating half-circle points
+        let mut points_of_a_half_circle = VecDeque::new();
+        let mut first_points = VecDeque::new();
+        for x in min_x..=max_x {
+            first_points.push_back(Point(x, self.1));
         }
 
-        for ord in 1..=radius {
-            for abs in 0..=radius - ord {
-                let x = center.0 + abs * factor.0;
-                let y = center.1 + ord * factor.1;
+        println!("first points finished");
 
-                let point = if is_inversed {
-                    Point(y, x)
-                } else {
-                    Point(x, y)
-                };
-
-                points.insert(point);
+        for (i, y) in (self.1..=max_y).enumerate() {
+            if i == 0 {
+                continue;
             }
+            let mut points_to_add = first_points.clone();
+            for _ in 0..i {
+                points_to_add.pop_front();
+                points_to_add.pop_back();
+            }
+
+            points_to_add.iter_mut().map(|mut p| p.1 = y).count();
+            points_of_a_half_circle.append(&mut points_to_add);
         }
 
-        points
+        points_of_a_half_circle.append(&mut first_points);
+
+        println!("half-circle finished");
+
+
+        // Creating circle points
+        let mut points_of_a_circle = HashSet::new();
+        points_of_a_circle.extend(points_of_a_half_circle.iter());
+
+        for p in points_of_a_half_circle {
+            if p.1 == center_y {
+                continue;
+            }
+            let dy = p.1 - center_y;
+            let new_y = center_y - dy;
+            let point = Point(p.0, new_y);
+            points_of_a_circle.insert(point);
+        }
+
+        println!("circle finished");
+
+
+        points_of_a_circle
     }
+
 }
 
 
@@ -279,6 +293,9 @@ mod tests {
         let s = Point(5, 12);
         let b = Point(7, 11);
 
+        // let s = Point(2924811, 3544081);
+        // let b = Point(3281893, 3687621);
+
         let points = [
             Point(5, 12), 
             Point(5, 13), Point(6, 13), Point(7, 13), Point(5, 14), Point(6, 14), Point(5, 15),
@@ -289,6 +306,7 @@ mod tests {
 
         // When
         let manhattan_distance_s_to_b = s.get_manhattan_distance(&b);
+        println!("manhattan distance : {manhattan_distance_s_to_b}");
         let calculated_points = s.get_all_point_from_a_perimeter(manhattan_distance_s_to_b);
         println!("{:?}", calculated_points);
 

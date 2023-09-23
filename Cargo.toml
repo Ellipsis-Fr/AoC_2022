@@ -88,6 +88,10 @@ path = "src/15_12/part_1.rs"
 name = "15_12_p2"
 path = "src/15_12/part_2.rs"
 
+[[bin]]
+name = "16_12_p1"
+path = "src/16_12/part_1.rs"
+
 [dependencies]
 regex = "1"
 num = "0.4.1"

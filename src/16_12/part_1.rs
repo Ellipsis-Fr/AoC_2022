@@ -9,9 +9,9 @@ fn main() {
     
     let puzzle = get_puzzle();
     let hydraulic_network = HydraulicNetwork::new(puzzle);
-    // println!("{:?}", hydraulic_network);
-    let max_pressure = hydraulic_network.get_max_pressure_can_be_released_for_given_time("AA", 30);
-    println!("max_pressure {max_pressure}");
+    println!("{:?}", hydraulic_network);
+    // let max_pressure = hydraulic_network.get_max_pressure_can_be_released_for_given_time("AA", 30);
+    // println!("max_pressure {max_pressure}");
     
 }
 

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use AoC_2022::text_file_reader::TextFileReader;
 
 use crate::hydraulic_network::HydraulicNetwork;
@@ -5,14 +7,16 @@ use crate::hydraulic_network::HydraulicNetwork;
 mod hydraulic_network;
 
 fn main() {
+    let start_time = Instant::now();
     println!("Puzzle du 16/12 Partie 1");
     
     let puzzle = get_puzzle();
     let hydraulic_network = HydraulicNetwork::new(puzzle);
-    println!("{:?}", hydraulic_network);
-    // let max_pressure = hydraulic_network.get_max_pressure_can_be_released_for_given_time("AA", 30);
-    // println!("max_pressure {max_pressure}");
-    
+    // println!("{:?}", hydraulic_network);
+    let max_pressure = hydraulic_network.get_max_pressure_can_be_released_for_given_time("AA", 30);
+    println!("max_pressure {max_pressure}");
+    let end_time = Instant::now();
+    println!("Time elapsed {:?}", end_time.duration_since(start_time));
 }
 
 fn get_puzzle() -> Vec<String> {

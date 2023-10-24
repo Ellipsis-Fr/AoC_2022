@@ -4,8 +4,6 @@ use regex::Regex;
 
 #[derive(Debug)]
 pub struct HydraulicNetwork {
-    valves: Vec<Rc<Valve>>,
-    openable_valve_count: i32,
     nodes: Vec<Rc<RefCell<Node>>>,
 }
 
@@ -13,18 +11,14 @@ impl HydraulicNetwork {
     pub fn new(definition_of_hydraulic_network: Vec<String>) -> Self {
         let mut valves = vec![];
         let valves_information = HydraulicNetwork::parse(definition_of_hydraulic_network);
-        let mut openable_valve_count = 0;
 
         for (valve_name, flow, connected_valves_list) in valves_information {
-            if flow > 0 {
-                openable_valve_count += 1;
-            }
             valves.push(Rc::new(Valve::new(valve_name, flow, connected_valves_list)));
         }
 
-        let nodes = Node::new_pipeline(&valves);
+        let nodes = Node::new_pipeline(valves);
 
-        HydraulicNetwork { valves, openable_valve_count, nodes }
+        HydraulicNetwork { nodes }
     }
 
     fn parse(definition_of_hydraulic_network: Vec<String>) -> Vec<(String, u32, Vec<String>)> {
@@ -105,13 +99,13 @@ struct Node {
 }
 
 impl Node {
-    pub fn new_pipeline(valves: &Vec<Rc<Valve>>) -> Vec<Rc<RefCell<Node>>> {
+    pub fn new_pipeline(valves: Vec<Rc<Valve>>) -> Vec<Rc<RefCell<Node>>> {
         let nodes = Node::init_nodes(valves);
         Node::add_connections(&nodes);
         nodes
     }
 
-    fn init_nodes(valves: &Vec<Rc<Valve>>) -> Vec<Rc<RefCell<Node>>> {
+    fn init_nodes(valves: Vec<Rc<Valve>>) -> Vec<Rc<RefCell<Node>>> {
         let mut nodes = HashMap::new();
         let check_node_already_connected = |x: &Weak<RefCell<Node>>, y: &str| -> bool {
             match x.upgrade() {
@@ -120,11 +114,11 @@ impl Node {
             }
         };
 
-        for valve in valves {
+        for valve in &valves {
             let node = match nodes.get(&valve.name) {
                 Some(n) => Rc::clone(n),
                 None => {
-                    let n = Node::new(valve);
+                    let n = Node::new(&valve);
                     nodes.insert(&valve.name, Rc::clone(&n));
                     n
                 }

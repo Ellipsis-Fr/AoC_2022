@@ -1,4 +1,4 @@
-use std::{fmt::Debug, any::Any, rc::Rc};
+use std::{fmt::Debug, any::Any, rc::{Rc, Weak}, cell::RefCell};
 
 /*
 Formes Possibles :
@@ -25,7 +25,7 @@ Formes Possibles :
 static BORDERS: (i32, i32) = (0, 6);
 static FLOOR: i32 = 1;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Coordinate(pub i32, pub i32);
 
 pub struct TetrisFactory;
@@ -41,6 +41,18 @@ impl TetrisFactory {
             _ => panic!("unrecognized type")
         }
     }
+
+
+    pub fn new_with_coordinates(order: u8, coordinates: Vec<Coordinate>) -> Box<dyn Shape> {
+        match order {
+            1 => Box::new(TetriminoHorizontalBar { coordinates }),
+            2 => Box::new(TetriminoCross { coordinates }),
+            3 => Box::new(TetriminoJ { coordinates }),
+            4 => Box::new(TetriminoVerticalBar { coordinates }),
+            5 => Box::new(TetriminoSquare { coordinates }),
+            _ => panic!("unrecognized type")
+        }
+    }
 }
 
 pub trait Shape: Debug + Any {
@@ -51,6 +63,8 @@ pub trait Shape: Debug + Any {
     fn check_crossing_with_another_tetrimino(&self, other: Rc<Box<dyn Shape>>) -> bool;
     fn get_top(&self) -> i32;
     fn get_bottom(&self) -> i32;
+    fn get_left(&self) -> i32;
+    fn get_name(&self) -> String;
     fn get_coordinates(&self) -> &Vec<Coordinate>;
 }
 
@@ -156,6 +170,35 @@ macro_rules! impl_Shape {
                 self.coordinates.iter().map(|c| c.1).min().unwrap()
             }
 
+            fn get_left(&self) -> i32 {
+                let bottom = self.get_bottom();
+                let mut x_positions = vec![];
+
+                for c in &self.coordinates {
+                    if c.1 > bottom {
+                        continue;
+                    }
+                    x_positions.push(c.0);
+                }
+                *(x_positions.iter().min().unwrap())
+            }
+
+            fn get_name(&self) -> String {
+                if let Some(_) = self.as_any().downcast_ref::<TetriminoHorizontalBar>() {
+                    "TetriminoHorizontalBar".to_string()
+                } else if let Some(_) = self.as_any().downcast_ref::<TetriminoCross>() {
+                    "TetriminoCross".to_string()
+                } else if let Some(_) = self.as_any().downcast_ref::<TetriminoJ>() {
+                    "TetriminoJ".to_string()
+                } else if let Some(_) = self.as_any().downcast_ref::<TetriminoVerticalBar>() {
+                    "TetriminoVerticalBar".to_string()
+                } else if let Some(_) = self.as_any().downcast_ref::<TetriminoSquare>() {
+                    "TetriminoSquare".to_string()
+                } else {
+                    panic!("unrecognized type")
+                }
+            }
+
             fn get_coordinates(&self) -> &Vec<Coordinate> {
                 &self.coordinates
             }
@@ -172,7 +215,7 @@ impl_Shape! {TetriminoSquare}
 
 #[derive(Debug)]
 pub struct TetriminoHorizontalBar {
-    coordinates: Vec<Coordinate>
+    pub coordinates: Vec<Coordinate>
 }
 
 impl TetriminoHorizontalBar {
@@ -183,7 +226,7 @@ impl TetriminoHorizontalBar {
 
 #[derive(Debug)]
 pub struct TetriminoVerticalBar {
-    coordinates: Vec<Coordinate>
+    pub coordinates: Vec<Coordinate>
 }
 
 impl TetriminoVerticalBar {
@@ -194,7 +237,7 @@ impl TetriminoVerticalBar {
 
 #[derive(Debug)]
 pub struct TetriminoCross {
-    coordinates: Vec<Coordinate>
+    pub coordinates: Vec<Coordinate>
 }
 
 impl TetriminoCross {
@@ -216,7 +259,7 @@ impl TetriminoCross {
 
 #[derive(Debug)]
 pub struct TetriminoJ {
-    coordinates: Vec<Coordinate>
+    pub coordinates: Vec<Coordinate>
 }
 
 impl TetriminoJ {
@@ -252,5 +295,142 @@ impl TetriminoSquare {
         }
 
         Self { coordinates }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CycleGuesser {
+    pub tetrimino: Rc<Box<dyn Shape>>,
+    pub tetrimino_name: String,
+    pub x_position: i32,
+    pub index_jet: usize,
+    pub total_jet: u32,
+    pub height: i32,
+    pub ptr_tetriminos_index: u8,
+}
+
+impl CycleGuesser {
+    pub fn new(tetrimino: Rc<Box<dyn Shape>>, index_jet: usize, total_jet: u32, ptr_tetriminos_index: u8) -> Self {
+        let tetrimino_name = tetrimino.get_name();
+        let height = tetrimino.get_top();
+        let mut x_position = tetrimino.get_left();
+
+        CycleGuesser { tetrimino, tetrimino_name, x_position, index_jet, total_jet, height, ptr_tetriminos_index }
+    }
+}
+
+impl PartialEq for CycleGuesser {
+    fn eq(&self, other: &Self) -> bool {
+        self.tetrimino_name == other.tetrimino_name && self.x_position == other.x_position && self.index_jet == other.index_jet && self.total_jet == other.total_jet && self.height == other.height
+    }
+}
+
+#[derive(Debug)]
+pub struct LinkedList<T> {
+    pub node: Option<Rc<RefCell<Node<T>>>>,
+    // data: Option<T>,
+    // previous: Option<T>,
+    // next: Option<T>,
+    pub current_index: i32
+}
+
+impl<T> LinkedList<T> {
+    pub fn new() -> Self {
+        // LinkedList { data: None, previous: None, next: None, current_index: 0 }
+        LinkedList { node: None, current_index: -1 }
+
+    }
+
+    pub fn add(&mut self, data: T) {
+        match self.node {
+            None => {
+                self.node = Some(Rc::new(RefCell::new(Node::new(data, None))));
+                self.current_index += 1;
+            },
+            Some(_) => {
+                let last_node = self.get(self.current_index).unwrap();
+                let new_node = Rc::new(RefCell::new(Node::new(data, Some(Rc::downgrade(&last_node)))));
+                last_node.borrow_mut().next = Some(new_node);
+                self.current_index += 1;
+            }
+        }
+    }
+
+    pub fn get(&self, index: i32) -> Result<Rc<RefCell<Node<T>>>, MyError> {
+        if index < 0 || index > self.current_index {
+            Err(MyError { message: "index is out of range".to_string() })
+        } else {
+            let mut node = Rc::clone(&self.node.as_ref().unwrap());
+            
+            for _ in 0..index {
+                node = {
+                    let borrow_node = node.borrow();
+                    Rc::clone(borrow_node.next.as_ref().unwrap())
+                }
+            }
+
+            Ok(Rc::clone(&node))
+        }
+    }
+
+    pub fn size(&self) -> u32 {
+        let mut size = 0;
+
+        match self.node.as_ref() {
+            None => (),
+            Some(d) => {
+                let mut next = Rc::clone(d);
+                let mut vec = vec![];
+                loop {
+                    size += 1;
+                    // let borrow_node = {
+                    //     let n = Rc::clone(&next);
+                    //     n.borrow()
+                    // };
+                    // let borrow_node = next.borrow();
+                    next = if vec.is_empty() {
+                        next
+                    } else {
+                        vec.pop().unwrap()
+                    };
+
+                    match next.borrow().next.as_ref() {
+                        None => break,
+                        Some(n) => {
+                            vec.push(Rc::clone(&n));
+                            // next = Rc::clone(&n);
+                        }
+                    }
+                }
+            }
+        }
+
+        size
+    }
+}
+
+#[derive(Debug)]
+pub struct Node<T> {
+    pub data: T,
+    pub previous: Option<Weak<RefCell<Node<T>>>>,
+    pub next: Option<Rc<RefCell<Node<T>>>>
+}
+
+impl<T> Node<T> {
+    pub fn new(data: T, previous: Option<Weak<RefCell<Node<T>>>>) -> Self {
+        Self {data, previous, next: None }
+    }
+}
+
+#[derive(Debug)]
+pub struct MyError {
+    message: String,
+}
+
+impl MyError {
+    fn new(message: &str) -> MyError {
+        MyError {
+            message: message.to_string(),
+        }
     }
 }

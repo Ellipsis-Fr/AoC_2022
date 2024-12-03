@@ -4,5 +4,114 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "test"
+path = "src/test/test.rs"
+
+[[bin]]
+name = "04_12_p1"
+path = "src/04_12/part_1.rs"
+
+[[bin]]
+name = "04_12_p2"
+path = "src/04_12/part_2.rs"
+
+[[bin]]
+name = "05_12_p1"
+path = "src/05_12/part_1.rs"
+
+[[bin]]
+name = "05_12_p2"
+path = "src/05_12/part_2.rs"
+
+[[bin]]
+name = "06_12_p1"
+path = "src/06_12/part_1.rs"
+
+[[bin]]
+name = "06_12_p2"
+path = "src/06_12/part_2.rs"
+
+[[bin]]
+name = "08_12_p1"
+path = "src/08_12/part_1.rs"
+
+[[bin]]
+name = "08_12_p2"
+path = "src/08_12/part_2.rs"
+
+[[bin]]
+name = "09_12_p1"
+path = "src/09_12/part_1.rs"
+
+[[bin]]
+name = "09_12_p2"
+path = "src/09_12/part_2.rs"
+
+[[bin]]
+name = "10_12_p1"
+path = "src/10_12/part_1.rs"
+
+[[bin]]
+name = "10_12_p2"
+path = "src/10_12/part_2.rs"
+
+[[bin]]
+name = "12_12_p1"
+path = "src/12_12/p1/part_1.rs"
+
+[[bin]]
+name = "12_12_p2"
+path = "src/12_12/p2/part_2.rs"
+
+[[bin]]
+name = "13_12_p1"
+path = "src/13_12/part_1.rs"
+
+[[bin]]
+name = "13_12_p2"
+path = "src/13_12/p2/part_2.rs"
+
+[[bin]]
+name = "14_12_p1"
+path = "src/14_12/part_1.rs"
+
+[[bin]]
+name = "14_12_p2"
+path = "src/14_12/part_2.rs"
+
+[[bin]]
+name = "15_12_p1"
+path = "src/15_12/part_1.rs"
+
+[[bin]]
+name = "15_12_p2"
+path = "src/15_12/part_2.rs"
+
+[[bin]]
+name = "16_12_p1"
+path = "src/16_12/p1/part_1.rs"
+
+[[bin]]
+name = "16_12_p2"
+path = "src/16_12/p2/part_2.rs"
+
+[[bin]]
+name = "17_12_p1"
+path = "src/17_12/p1/part_1.rs"
+
+[[bin]]
+name = "17_12_p2"
+path = "src/17_12/p2/part_2.rs"
+
+[[bin]]
+name = "18_12_p1"
+path = "src/18_12/part_1.rs"
+
+[[bin]]
+name = "18_12_p2"
+path = "src/18_12/part_2.rs"
 
 [dependencies]
+regex = "1"
+num = "0.4.1"
